@@ -1,3 +1,12 @@
-export default function FoodPage() {
-  return <section>Hello world</section>;
+import RecentFoodSearch from "@/feature/diary/components/RecentFoodSearch";
+import { Suspense } from "react";
+
+export default async function FoodPage() {
+  return (
+    <section className="p-4">
+      <Suspense>
+        <RecentFoodSearch />
+      </Suspense>
+    </section>
+  );
 }

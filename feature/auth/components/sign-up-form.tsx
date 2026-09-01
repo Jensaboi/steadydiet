@@ -74,7 +74,7 @@ export function SignUpForm({
                   placeholder="m@example.com"
                   required
                   value={email}
-                  onChange={(e) => setEmail(e.target.value)}
+                  onChange={e => setEmail(e.target.value)}
                 />
               </div>
               <div className="grid gap-2">
@@ -86,7 +86,7 @@ export function SignUpForm({
                   type="password"
                   required
                   value={password}
-                  onChange={(e) => setPassword(e.target.value)}
+                  onChange={e => setPassword(e.target.value)}
                 />
               </div>
               <div className="grid gap-2">
@@ -98,7 +98,7 @@ export function SignUpForm({
                   type="password"
                   required
                   value={repeatPassword}
-                  onChange={(e) => setRepeatPassword(e.target.value)}
+                  onChange={e => setRepeatPassword(e.target.value)}
                 />
               </div>
               {error && <p className="text-sm text-red-500">{error}</p>}
