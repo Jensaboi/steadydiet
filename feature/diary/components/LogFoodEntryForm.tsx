@@ -1,8 +1,8 @@
 "use client";
-import { useState } from "react";
+import { useActionState, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { useQuery } from "@tanstack/react-query";
-import { capitalizeFirstLetter } from "@/lib/utils";
+import { capitalizeFirstLetter, formatDate } from "@/lib/utils";
 import { FoodAndEntryAndServing, MealType } from "../diary-types";
 import { Input } from "@/components/ui/input";
 import FoodMacros from "./FoodMacros";
@@ -13,6 +13,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { useSearchParams } from "next/navigation";
+import { createFoodEntry } from "../diary-action";
+import { Button } from "@/components/ui/button";
 
 export type LogFoodEntryFormProps = {
   foodData: FoodAndEntryAndServing;
@@ -23,8 +26,11 @@ export default function LogFoodEntryForm({
   foodData,
   mealTypes,
 }: LogFoodEntryFormProps) {
-  const servingQuery = useQuery({
+  const [state, formAction, isPending] = useActionState(createFoodEntry, null);
+
+  const { data: servings, error: servingsError } = useQuery({
     queryKey: ["serving"],
+    initialData: [],
     queryFn: async () => {
       const supabase = createClient();
 
@@ -35,98 +41,122 @@ export default function LogFoodEntryForm({
 
       if (error) console.log(error.message);
 
-      return data;
+      return data ? data : [];
     },
   });
+
+  const searchParams = useSearchParams();
+  const date = searchParams.get("date") || formatDate(new Date());
 
   const food = foodData.food;
   const foodServing = foodData?.foodServing;
   const entry = foodData?.entry;
 
   const [amount, setAmount] = useState<number>(entry ? entry.amount : 1);
-  const [serving, setServing] = useState<string | null>(
-    entry ? entry.food_serving_id : null,
+  const [servingId, setServingId] = useState<string | undefined>(
+    entry?.food_serving_id ? entry.food_serving_id : "1",
   );
-  const [mealType, setMealType] = useState<string | null>(
-    entry ? entry.meal_type_id : null,
+  const [mealType, setMealType] = useState<string | undefined>(
+    entry ? entry.meal_type_id : undefined,
   );
 
+  const serving = [...servings, foodServing].find(s => s?.id === servingId);
+
+  const calories = serving
+    ? ((food.calories_per_100 / 100) * serving.amount * amount).toFixed(1)
+    : ((food.calories_per_100 / 100) * amount).toFixed(1);
+  const protein = serving
+    ? ((food.protein_per_100 / 100) * serving.amount * amount).toFixed(1)
+    : ((food.protein_per_100 / 100) * amount).toFixed(1);
+  const carbs = serving
+    ? ((food.carbs_per_100 / 100) * serving.amount * amount).toFixed(1)
+    : ((food.carbs_per_100 / 100) * amount).toFixed(1);
+  const fat = serving
+    ? ((food.fat_per_100 / 100) * serving.amount * amount).toFixed(1)
+    : ((food.fat_per_100 / 100) * amount).toFixed(1);
+
+  const labelClassName = "text-sm font-medium";
+
   return (
-    <form className="">
+    <form action={formAction} className="flex flex-col gap-8 w-full">
       <div>
         <h1 className="text-lg font-semibold">{food.name_description}</h1>
         <span className="font-medium">{food.product_name}</span>
       </div>
 
-      <div className="w-full flex flex-col gap-4">
-        <label className="flex items-center gap-2">
-          <span>Serving: </span>
-          <Select name="serving" value={serving} onValueChange={setServing}>
-            <SelectTrigger>
-              <SelectValue placeholder="Select a serving" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value={null}>1{food.nutrition_measure}</SelectItem>
-              {foodServing && (
-                <SelectItem value={foodServing.id}>
-                  {foodServing.label}
-                </SelectItem>
-              )}
-              {/* {serving.data?.map(serving => (
-                <SelectItem key={serving.id} value={serving.id}>
-                  {serving.label}
-                </SelectItem>
-              ))} */}
-            </SelectContent>
-          </Select>
+      <div className="w-full grid grid-cols-[100px_minmax(0,1fr)] gap-2 items-center">
+        <label htmlFor="serving" className={labelClassName}>
+          Serving:
         </label>
+        <Select name="serving" value={servingId} onValueChange={setServingId}>
+          <SelectTrigger>
+            <SelectValue placeholder="Select a serving" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value={"1"}>1{food.nutrition_measure}</SelectItem>
+            {foodServing && (
+              <SelectItem value={foodServing.id}>
+                {foodServing.label}
+              </SelectItem>
+            )}
 
-        <label className="flex items-center gap-2" htmlFor="amount">
-          <span>Amount: </span>
-          <Input
-            name="amount"
-            id="amount"
-            type="number"
-            value={amount}
-            onChange={e => setAmount(Number(e.target.value))}
-          />
-        </label>
+            {servings?.map(serving => (
+              <SelectItem key={serving.id} value={serving.id}>
+                {serving.label}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
 
-        <label className="flex items-center gap-2">
-          <span>Meal:</span>
-          <Select name="mealType" value={mealType} onValueChange={setMealType}>
-            <SelectTrigger>
-              <SelectValue placeholder="Select a meal" />
-            </SelectTrigger>
-            <SelectContent>
-              {mealTypes.map(meal => (
-                <SelectItem key={meal.id} value={meal.id}>
-                  {capitalizeFirstLetter(meal.name)}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+        <label htmlFor="amount" className={labelClassName}>
+          Amount:
         </label>
+        <Input
+          name="amount"
+          id="amount"
+          type="number"
+          value={amount}
+          onChange={e => setAmount(Number(e.target.value))}
+        />
+
+        <label htmlFor="mealType" className={labelClassName}>
+          Meal:
+        </label>
+        <Select name="mealType" value={mealType} onValueChange={setMealType}>
+          <SelectTrigger>
+            <SelectValue placeholder="Select a meal" />
+          </SelectTrigger>
+          <SelectContent>
+            {mealTypes.map(meal => (
+              <SelectItem key={meal.id} value={meal.id}>
+                {capitalizeFirstLetter(meal.name)}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+
+        <label htmlFor="date" className={labelClassName}>
+          Date:
+        </label>
+        <Input name="date" id="date" type="date" defaultValue={date} />
       </div>
 
       <FoodMacros
-        calories={
-          ((food.calories_per_100 / 100) * amount).toFixed(
-            1,
-          ) as unknown as number
-        }
-        protein={
-          ((food.protein_per_100 / 100) * amount).toFixed(
-            1,
-          ) as unknown as number
-        }
-        carbs={
-          ((food.carbs_per_100 / 100) * amount).toFixed(1) as unknown as number
-        }
-        fat={
-          ((food.fat_per_100 / 100) * amount).toFixed(1) as unknown as number
-        }
+        calories={calories as unknown as number}
+        protein={protein as unknown as number}
+        carbs={carbs as unknown as number}
+        fat={fat as unknown as number}
       />
+
+      {state?.error && (
+        <div className="text-red-500 text-sm font-medium">{state.error}</div>
+      )}
+
+      <div className="flex items-center justify-end gap-2">
+        <Button className="w-full" type="submit" disabled={isPending}>
+          {isPending ? "Adding food..." : "Add food"}
+        </Button>
+      </div>
     </form>
   );
 }
