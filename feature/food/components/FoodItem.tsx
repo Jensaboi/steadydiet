@@ -19,17 +19,23 @@ export default function FoodItem({
     <Item
       asChild
       variant="outline"
-      className="flex justify-between items-center"
+      className="flex w-full min-w-0 items-center flex-nowrap truncate"
     >
       <li>
-        <div>
-          <ItemTitle>{name}</ItemTitle>
+        <div className="min-w-0 flex-1 flex flex-col gap-1">
+          <ItemTitle className="truncate text-ellipsis">{name}</ItemTitle>
 
-          <ItemDescription>
+          <ItemDescription className="truncate text-muted-foreground text-xs">
             {calories} kcal, {serving}, {productName}
           </ItemDescription>
         </div>
-        <Button onClick={onSelect} title="Add item" variant="outline">
+
+        <Button
+          onClick={onSelect}
+          title="Add entry"
+          variant="outline"
+          className="ml-2 shrink-0"
+        >
           <PlusIcon />
         </Button>
       </li>

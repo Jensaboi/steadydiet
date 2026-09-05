@@ -44,8 +44,8 @@ export default function FoodSearch({
   });
 
   return (
-    <div>
-      <div className="flex flex-col gap-2">
+    <div className="flex flex-col gap-8">
+      <div className="flex flex-col gap-4">
         <Input value={query} onChange={e => setQuery(e.target.value)} />
         <div className="flex items-center justify-center w-full gap-2 py-4">
           <Button className="flex-1 flex flex-col">
@@ -57,21 +57,31 @@ export default function FoodSearch({
         </div>
       </div>
       <ul className="flex flex-col gap-2 w-full ">
-        {recentFoodEntries.length > 0
-          ? recentFoodEntries.map(item => (
-              <FoodItem
-                key={item.entry!.id}
-                onSelect={() => setSelectedFood(item)}
-                name={item.food.name_description}
-                productName={item.food.product_name}
-                calories={item.entry!.calories}
-                serving={
-                  item.entry?.food_serving_id
-                    ? `${item.entry.amount} ${item.foodServing!.label}`
-                    : `${item.entry!.amount} ${item.food.nutrition_measure}`
-                }
-              />
-            ))
+        {recentFoodEntries.filter(item =>
+          item.food.name_description
+            .toLowerCase()
+            .startsWith(query.toLowerCase()),
+        ).length > 0
+          ? recentFoodEntries
+              .filter(item =>
+                item.food.name_description
+                  .toLowerCase()
+                  .startsWith(query.toLowerCase()),
+              )
+              .map(item => (
+                <FoodItem
+                  key={item.entry!.id}
+                  onSelect={() => setSelectedFood(item)}
+                  name={item.food.name_description}
+                  productName={item.food.product_name}
+                  calories={item.entry!.calories}
+                  serving={
+                    item.entry?.food_serving_id
+                      ? `${item.entry.amount} ${item.foodServing!.label}`
+                      : `${item.entry!.amount} ${item.food.nutrition_measure}`
+                  }
+                />
+              ))
           : foods.data?.map(food => (
               <FoodItem
                 key={food.id}
